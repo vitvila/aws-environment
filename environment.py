@@ -2,7 +2,7 @@
 
 import sys
 import boto.ec2
- 
+
 
 #Variables
 
