@@ -82,8 +82,6 @@ elif args[1] == "create":
 elif args[1] == "remove":
 	pass
 
-
-
 # AWS random code. Archive
 """
 conn_to_region = boto.ec2.connect_to_region("us-west-2", aws_access_key_id='<aws access key>', aws_secret_access_key='<aws secret key>')
