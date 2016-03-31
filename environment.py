@@ -18,7 +18,8 @@ args = sys.argv
 
 
 
-#Check config/usage
+#=========Check Usage=========
+
 def check_usage(args):
 	arg1 = ["start","stop","restart","create","remove"]
 	arg2 = ENV_NAME #Env name from conf file
@@ -35,6 +36,9 @@ def check_usage(args):
 		print "Wrong usage!!! Please use: environment.py start|stop|restart|create|remove ENV_NAME"
 		sys.exit(1)		
 
+
+#=========Check Config=========
+
 def check_config():
 	if os.path.isfile("environment.conf") == False:
 		print "Please make sure you have a valid configuration file!"
@@ -42,36 +46,73 @@ def check_config():
 
 
 
+#=========Start/Stop/Restart=========
 
-
-
-#Start/Stop/Restart
 def start_asg(env_name):
-	# Config file for start ASG
-	env_name = ENV_NAME 
-	AutoScalingGroupName = []
-	MinSize = 123
-	MaxSize = 123
-
+	
 	client = boto3.client('autoscaling')
+
+	response = client.update_auto_scaling_group(
+    AutoScalingGroupName='string',
+    LaunchConfigurationName='string',
+    MinSize=123,
+    MaxSize=123,
+    DesiredCapacity=123,
+    DefaultCooldown=123,
+    AvailabilityZones=[
+        'string',
+    ],
+    HealthCheckType='string',
+    HealthCheckGracePeriod=123,
+    PlacementGroup='string',
+    VPCZoneIdentifier='string',
+    TerminationPolicies=[
+        'string',
+    ],
+    NewInstancesProtectedFromScaleIn=True|False
+)
 	
 
 
 def stop_asg(env_name):
-	# Config file for stop ASG
-	env_name = ENV_NAME
-	AutoScalingGroupName = []
-	MinSize = 0
-	MaxSize = 0
+	
+	client = boto3.client('autoscaling')
+
+	response = client.update_auto_scaling_group(
+    AutoScalingGroupName='string',
+    LaunchConfigurationName='string',
+    MinSize=123,
+    MaxSize=123,
+    DesiredCapacity=123,
+    DefaultCooldown=123,
+    AvailabilityZones=[
+        'string',
+    ],
+    HealthCheckType='string',
+    HealthCheckGracePeriod=123,
+    PlacementGroup='string',
+    VPCZoneIdentifier='string',
+    TerminationPolicies=[
+        'string',
+    ],
+    NewInstancesProtectedFromScaleIn=True|False
+	)
+	
 
 def restart_asg(env_name):
+	if check_status(InstanceId) == 'Running':
+	 	stop_asg()
+	 	start_asg()
+	else:
+	 	start_asg()
 
 
 
 
 
 
-#Create/Remove
+#=========Create==============================================================
+
 def create_launch_conf(env_name):
 
 	client = boto3.client('autoscaling')
@@ -115,11 +156,11 @@ def create_launch_conf(env_name):
     EbsOptimized=True|False,
     AssociatePublicIpAddress=True|False,
     PlacementTenancy='string'
-)
+	)
 
 def create_asg(env_name):
 	
-	create_launch_conf()
+	# create_launch_conf()
 
 	client = boto3.client('autoscaling')
 
@@ -154,17 +195,87 @@ def create_asg(env_name):
             'PropagateAtLaunch': True|False
         },
     ]
-)
-def remove_asg(env_name):
-def create_launch_conf(env_name):
-def remove_launch_config(env_name):
+	)
+
+
 def create_elb(env_name):
+	
+	client = boto3.client('elb')
+
+	response = client.create_load_balancer(
+    LoadBalancerName='string',
+    Listeners=[
+        {
+            'Protocol': 'string',
+            'LoadBalancerPort': 123,
+            'InstanceProtocol': 'string',
+            'InstancePort': 123,
+            'SSLCertificateId': 'string'
+        },
+    ],
+    AvailabilityZones=[
+        'string',
+    ],
+    Subnets=[
+        'string',
+    ],
+    SecurityGroups=[
+        'string',
+    ],
+    Scheme='string',
+    Tags=[
+        {
+            'Key': 'string',
+            'Value': 'string'
+        },
+    ]
+    )
+
+
+
+
+
+
+#=========Remove==============================================================
+
+def remove_asg(env_name):
+
+	client = boto3.client('autoscaling')
+
+	response = client.delete_auto_scaling_group(
+    AutoScalingGroupName='string',
+    ForceDelete=True|False
+    )
+
+
+def remove_launch_config(env_name):
+
+	client = boto3.client('autoscaling')
+
+	response = client.delete_launch_configuration(
+    LaunchConfigurationName='string'
+    )
+
 def remove_elb(env_name):
+
+	client = boto3.client('autoscaling')
+	
+	response = client.delete_load_balancer(
+    LoadBalancerName='string'
+    )
+
+
+
+
+
+
+#=========Tidy_up_configuration=================================================
 def config_changes(env_name):
 
 
 
-# Main part
+
+#=========Main==================================================================
 
 if args[1] == "start":
 	start_asg("env_name")
@@ -181,7 +292,10 @@ elif args[1] == "create":
 elif args[1] == "remove":
 	pass
 
-# AWS random code. Archive
+
+
+
+# AWS random code. Archive=========================================================
 """
 conn_to_region = boto.ec2.connect_to_region("us-west-2", aws_access_key_id='<aws access key>', aws_secret_access_key='<aws secret key>')
 
