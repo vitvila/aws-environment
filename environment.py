@@ -15,6 +15,9 @@ aws_region=''
 #script's arguments
 args = sys.argv
 
+
+
+
 #Check config/usage
 def check_usage(args):
 	arg1 = ["start","stop","restart","create","remove"]
@@ -37,13 +40,121 @@ def check_config():
 		print "Please make sure you have a valid configuration file!"
 		sys.exit(1)
 
+
+
+
+
+
 #Start/Stop/Restart
 def start_asg(env_name):
+	# Config file for start ASG
+	env_name = ENV_NAME 
+	AutoScalingGroupName = []
+	MinSize = 123
+	MaxSize = 123
+
+	client = boto3.client('autoscaling')
+	
+
+
 def stop_asg(env_name):
+	# Config file for stop ASG
+	env_name = ENV_NAME
+	AutoScalingGroupName = []
+	MinSize = 0
+	MaxSize = 0
+
 def restart_asg(env_name):
 
+
+
+
+
+
 #Create/Remove
+def create_launch_conf(env_name):
+
+	client = boto3.client('autoscaling')
+
+	response = client.create_launch_configuration(
+    LaunchConfigurationName='string',
+    ImageId='string',
+    KeyName='string',
+    SecurityGroups=[
+        'string',
+    ],
+    ClassicLinkVPCId='string',
+    ClassicLinkVPCSecurityGroups=[
+        'string',
+    ],
+    UserData='string',
+    InstanceId='string',
+    InstanceType='string',
+    KernelId='string',
+    RamdiskId='string',
+    BlockDeviceMappings=[
+        {
+            'VirtualName': 'string',
+            'DeviceName': 'string',
+            'Ebs': {
+                'SnapshotId': 'string',
+                'VolumeSize': 123,
+                'VolumeType': 'string',
+                'DeleteOnTermination': True|False,
+                'Iops': 123,
+                'Encrypted': True|False
+            },
+            'NoDevice': True|False
+        },
+    ],
+    InstanceMonitoring={
+        'Enabled': True|False
+    },
+    SpotPrice='string',
+    IamInstanceProfile='string',
+    EbsOptimized=True|False,
+    AssociatePublicIpAddress=True|False,
+    PlacementTenancy='string'
+)
+
 def create_asg(env_name):
+	
+	create_launch_conf()
+
+	client = boto3.client('autoscaling')
+
+	response = client.create_auto_scaling_group(
+    AutoScalingGroupName='string',
+    LaunchConfigurationName='string',
+    InstanceId='string',
+    MinSize=123,
+    MaxSize=123,
+    DesiredCapacity=123,
+    DefaultCooldown=123,
+    AvailabilityZones=[
+        'string',
+    ],
+    LoadBalancerNames=[
+        'string',
+    ],
+    HealthCheckType='string',
+    HealthCheckGracePeriod=123,
+    PlacementGroup='string',
+    VPCZoneIdentifier='string',
+    TerminationPolicies=[
+        'string',
+    ],
+    NewInstancesProtectedFromScaleIn=True|False,
+    Tags=[
+        {
+            'ResourceId': 'string',
+            'ResourceType': 'string',
+            'Key': 'string',
+            'Value': 'string',
+            'PropagateAtLaunch': True|False
+        },
+    ]
+)
 def remove_asg(env_name):
 def create_launch_conf(env_name):
 def remove_launch_config(env_name):
@@ -56,21 +167,9 @@ def config_changes(env_name):
 # Main part
 
 if args[1] == "start":
-	# Config file for start ASG
-	env_name = ENV_NAME 
-	AutoScalingGroupName = []
-	MinSize = 123
-	MaxSize = 123
-	
 	start_asg("env_name")
 
 elif args[1] == "stop":
-	# Config file for stop ASG
-	env_name = ENV_NAME
-	AutoScalingGroupName = []
-	MinSize = 0
-	MaxSize = 0
-
 	stop_asg()
 
 elif args[1] == "restart":
@@ -94,3 +193,18 @@ ec2.instances.filter(InstanceIds=ids).terminate()
 conn = boto.connect_autoscale()
 config = LaunchConfiguration(name='foo', image_id='ami-abcd1234', key_name='foo.pem')
 conn.create_launch_configuration(config)
+
+
+# Botto3 examples
+In [19]: rc = ec2.resource.create_instances(
+    ImageId = ec2.getami('NetBSD*64*6.1.5*'),
+    MinCount = 1,
+    MaxCount = 1,
+    KeyName = 'mysshpemkey',
+    InstanceType = 'm3.medium',
+    PrivateIpAddress = '10.10.0.1',
+    SubnetId = ec2.get_id_from_nametag('subnets', 'examplesubnet')
+)
+In [20]: print(rc[0].id)
+i-b1774f1b
+
