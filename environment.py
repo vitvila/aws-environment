@@ -49,8 +49,19 @@ def check_config():
 #=========Start/Stop/Restart=========
 
 def start_asg(env_name):
-	
-	client = boto3.client('autoscaling')
+    
+    #Needed info from config file
+
+    #ASG_NAME_FROM_CONF = []
+    #MinSize=integer
+    #MaxSize
+
+    client = boto3.client('autoscaling')
+
+    asg_describe = client.describe_auto_scaling_groups(AutoScalingGroupNames=[ASG_NAME_FROM_CONF])
+    if asg_describe{'AutoScalingGroups'[{"MaxSize"}]} != 0:
+        print "Seems like instances in ASG: %s are still running" % ASG_NAME_FROM_CONF
+        sys.exit(1)
 
 	response = client.update_auto_scaling_group(
     AutoScalingGroupName='string',
@@ -76,6 +87,9 @@ def start_asg(env_name):
 
 def stop_asg(env_name):
 	
+    #Needed info from config file
+    #ASG_NAME_FROM_CONF = []
+
 	client = boto3.client('autoscaling')
 
 	response = client.update_auto_scaling_group(
