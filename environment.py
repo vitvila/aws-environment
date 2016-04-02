@@ -52,36 +52,29 @@ def start_asg(env_name):
     
     #Needed info from config file
 
-    #ASG_NAME_FROM_CONF = []
-    #MinSize=integer
-    #MaxSize=integer
+
+    #ASG_NAME_FROM_CONF = ['string',]
+    #MinSize=123
+    #MaxSize=123
+    #DesiredCapacity=123
 
     client = boto3.client('autoscaling')
-
     asg_describe = client.describe_auto_scaling_groups(AutoScalingGroupNames=[ASG_NAME_FROM_CONF])
-    if asg_describe{'AutoScalingGroups'[{"MaxSize"}]} != 0:
+    
+    current_max_size = asg_describe{'AutoScalingGroups'[{"MaxSize"}]}
+    current_desired_size = asg_describe{'AutoScalingGroups'[{"DesiredCapacity"}]}
+    
+    # Checking if instances are still running in asg
+    if current_max_size > 0 and current_desired_size > 0:
         print "Seems like instances in ASG: %s are still running" % ASG_NAME_FROM_CONF
         sys.exit(1)
 
-	response = client.update_auto_scaling_group(
-    AutoScalingGroupName='string',
-    LaunchConfigurationName='string',
-    MinSize=123,
-    MaxSize=123,
-    DesiredCapacity=123,
-    DefaultCooldown=123,
-    AvailabilityZones=[
-        'string',
-    ],
-    HealthCheckType='string',
-    HealthCheckGracePeriod=123,
-    PlacementGroup='string',
-    VPCZoneIdentifier='string',
-    TerminationPolicies=[
-        'string',
-    ],
-    NewInstancesProtectedFromScaleIn=True|False
-)
+	#Update Max, Min, Desired amount of instances in ASG
+    client.update_auto_scaling_group(
+    AutoScalingGroupName='ASG_NAME_FROM_CONF',
+    MinSize=MaxSize_FROM_CONF,
+    MaxSize=MinSize_FROM_CONF,
+    DesiredCapacity=DesiredCapacity_FROM_CONF)
 	
 
 
@@ -91,33 +84,38 @@ def stop_asg(env_name):
     #ASG_NAME_FROM_CONF = []
 
 	client = boto3.client('autoscaling')
+    asg_describe = client.describe_auto_scaling_groups(AutoScalingGroupNames=[ASG_NAME_FROM_CONF])
+    
+    current_max_size = asg_describe{'AutoScalingGroups'[{"MaxSize"}]}
+    current_desired_size = asg_describe{'AutoScalingGroups'[{"DesiredCapacity"}]}
 
-	response = client.update_auto_scaling_group(
-    AutoScalingGroupName='string',
-    LaunchConfigurationName='string',
-    MinSize=123,
-    MaxSize=123,
-    DesiredCapacity=123,
-    DefaultCooldown=123,
-    AvailabilityZones=[
-        'string',
-    ],
-    HealthCheckType='string',
-    HealthCheckGracePeriod=123,
-    PlacementGroup='string',
-    VPCZoneIdentifier='string',
-    TerminationPolicies=[
-        'string',
-    ],
-    NewInstancesProtectedFromScaleIn=True|False
-	)
+    #Checking if instances already stopped
+	if current_max_size = 0 and current_desired_size = 0:
+        print "Seems like instances in ASG: %s already stopped" % ASG_NAME_FROM_CONF
+        sys.exit(1)
+
+
+    client.update_auto_scaling_group(
+    AutoScalingGroupName='ASG_NAME_FROM_CONF',
+    MinSize=0,
+    MaxSize=0,
+    DesiredCapacity=0)
 	
 
 def restart_asg(env_name):
-	if check_status(InstanceId) == 'Running':
-	 	stop_asg()
-	 	start_asg()
+
+    
+    client = boto3.client('autoscaling')
+    asg_describe = client.describe_auto_scaling_groups(AutoScalingGroupNames=[ASG_NAME_FROM_CONF])
+    
+    current_max_size = asg_describe{'AutoScalingGroups'[{"MaxSize"}]}
+    current_desired_size = asg_describe{'AutoScalingGroups'[{"DesiredCapacity"}]}
+
+    #Checking if instances already stopped
+    if current_max_size = 0 and current_desired_size = 0:
+        start_asg()    
 	else:
+        stop_asg()
 	 	start_asg()
 
 
@@ -312,17 +310,13 @@ elif args[1] == "remove":
 # AWS random code. Archive=========================================================
 """
 conn_to_region = boto.ec2.connect_to_region("us-west-2", aws_access_key_id='<aws access key>', aws_secret_access_key='<aws secret key>')
-
 #Stopping/Terminating
 ec2.instances.filter(InstanceIds=ids).stop()
 ec2.instances.filter(InstanceIds=ids).terminate()
-
 # ASG
 conn = boto.connect_autoscale()
 config = LaunchConfiguration(name='foo', image_id='ami-abcd1234', key_name='foo.pem')
 conn.create_launch_configuration(config)
-
-
 # Botto3 examples
 In [19]: rc = ec2.resource.create_instances(
     ImageId = ec2.getami('NetBSD*64*6.1.5*'),
@@ -335,4 +329,5 @@ In [19]: rc = ec2.resource.create_instances(
 )
 In [20]: print(rc[0].id)
 i-b1774f1b
-
+Status API Training Shop Blog About
+© 2016 GitHub, Inc. Terms Privacy Security Contact Help
