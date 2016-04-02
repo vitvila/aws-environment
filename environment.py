@@ -1,7 +1,7 @@
 # Usage: /home/scripts/environment.py start|stop|restart|create|remove ENV_NAME
 
 import sys
-import boto.ec2
+import boto3
 
 
 #Variables
@@ -54,7 +54,7 @@ def start_asg(env_name):
 
     #ASG_NAME_FROM_CONF = []
     #MinSize=integer
-    #MaxSize
+    #MaxSize=integer
 
     client = boto3.client('autoscaling')
 
