@@ -2,6 +2,7 @@
 
 import sys
 import boto3
+import time
 
 
 #Variables
@@ -48,58 +49,69 @@ def check_config():
 
 #=========Start/Stop/Restart=========
 
-def start_asg(env_name):
+def start_asg(asg_names):
     
-    #Needed info from config file
+    #usage: start_asg(['BE_asg-002'])
+    # for loop to start each ASG
 
+    for asg_name in asg_names:
+   
+        #Needed info from config file
+        #asg_names = ['string',]
+        MinSize="From Conf"
+        MaxSize="From Conf"
+        DesiredCapacity="From Conf"
 
-    #ASG_NAME_FROM_CONF = ['string',]
-    #MinSize=123
-    #MaxSize=123
-    #DesiredCapacity=123
+        print "Starting ASG: %s" % asg_name
+        client = boto3.client('autoscaling')
+        asg_describe = client.describe_auto_scaling_groups(AutoScalingGroupNames=[asg_name])
+        
+        current_min_size = asg_describe['AutoScalingGroups'][0]['MinSize']
+    	current_min_size = asg_describe['AutoScalingGroups'][0]['MinSize']
+    	current_max_size = asg_describe['AutoScalingGroups'][0]['MaxSize']
+    	current_desired_size = asg_describe['AutoScalingGroups'][0]['DesiredCapacity']
+        
+        # Checking if instances are still running in asg
+        if current_max_size > 0 and current_desired_size > 0:
+            print "Seems like instances in ASG: %s are still running" % asg_name
+            continue
 
-    client = boto3.client('autoscaling')
-    asg_describe = client.describe_auto_scaling_groups(AutoScalingGroupNames=[ASG_NAME_FROM_CONF])
-    
-    current_max_size = asg_describe{'AutoScalingGroups'[{"MaxSize"}]}
-    current_desired_size = asg_describe{'AutoScalingGroups'[{"DesiredCapacity"}]}
-    
-    # Checking if instances are still running in asg
-    if current_max_size > 0 and current_desired_size > 0:
-        print "Seems like instances in ASG: %s are still running" % ASG_NAME_FROM_CONF
-        sys.exit(1)
-
-	#Update Max, Min, Desired amount of instances in ASG
-    client.update_auto_scaling_group(
-    AutoScalingGroupName='ASG_NAME_FROM_CONF',
-    MinSize=MaxSize_FROM_CONF,
-    MaxSize=MinSize_FROM_CONF,
-    DesiredCapacity=DesiredCapacity_FROM_CONF)
+    	#Update Max, Min, Desired amount of instances in ASG
+        client.update_auto_scaling_group(
+        AutoScalingGroupName=asg_name,
+        MinSize=MinSize,
+        MaxSize=MaxSize,
+        DesiredCapacity=DesiredCapacity)
 	
 
-
-def stop_asg(env_name):
+def stop_asg(asg_names):
 	
-    #Needed info from config file
-    #ASG_NAME_FROM_CONF = []
+	#usage: stop_asg(['BE_asg-002'])
 
-	client = boto3.client('autoscaling')
-    asg_describe = client.describe_auto_scaling_groups(AutoScalingGroupNames=[ASG_NAME_FROM_CONF])
-    
-    current_max_size = asg_describe{'AutoScalingGroups'[{"MaxSize"}]}
-    current_desired_size = asg_describe{'AutoScalingGroups'[{"DesiredCapacity"}]}
+	# for loop to stop each ASG
+	for asg_name in asg_names:
+		
+		#Needed info from config file
+		#ASG_NAME_FROM_CONF = []
 
-    #Checking if instances already stopped
-	if current_max_size = 0 and current_desired_size = 0:
-        print "Seems like instances in ASG: %s already stopped" % ASG_NAME_FROM_CONF
-        sys.exit(1)
+		client = boto3.client('autoscaling')
+		asg_describe = client.describe_auto_scaling_groups(AutoScalingGroupNames=[asg_name])
+		current_min_size = asg_describe['AutoScalingGroups'][0]['MinSize']
+		current_max_size = asg_describe['AutoScalingGroups'][0]['MaxSize']
+		current_desired_size = asg_describe['AutoScalingGroups'][0]['DesiredCapacity']
 
+		print "Stopping ASG: %s" % asg_name
 
-    client.update_auto_scaling_group(
-    AutoScalingGroupName='ASG_NAME_FROM_CONF',
-    MinSize=0,
-    MaxSize=0,
-    DesiredCapacity=0)
+		#Checking if instances already stopped
+		if current_max_size == 0 and current_desired_size == 0:
+			print "Seems like instances in ASG: %s already stopped" % asg_name
+			continue
+
+		client.update_auto_scaling_group(
+		AutoScalingGroupName=asg_name,
+		MinSize=0,
+		MaxSize=0,
+		DesiredCapacity=0)
 	
 
 def restart_asg(env_name):
