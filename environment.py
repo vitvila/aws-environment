@@ -83,22 +83,29 @@ def start_asg(asg_names):
         MaxSize=MaxSize,
         DesiredCapacity=DesiredCapacity)
 	
-
+	
 def stop_asg(asg_names):
 	
 	#usage: stop_asg(['BE_asg-002'])
-
-	# for loop to stop each ASG
+    
+    # for loop to stop each ASG
 	for asg_name in asg_names:
-		
-		#Needed info from config file
-		#ASG_NAME_FROM_CONF = []
+	    
+	    #Needed info from config file
+	    #ASG_NAME_FROM_CONF = []
 
+	    #Variables
 		client = boto3.client('autoscaling')
+		client_ec2 = boto3.client('ec2')
 		asg_describe = client.describe_auto_scaling_groups(AutoScalingGroupNames=[asg_name])
 		current_min_size = asg_describe['AutoScalingGroups'][0]['MinSize']
 		current_max_size = asg_describe['AutoScalingGroups'][0]['MaxSize']
 		current_desired_size = asg_describe['AutoScalingGroups'][0]['DesiredCapacity']
+		
+		#Creating list of instances in asg
+		instances = []
+		for n in range(len(asg_describe['AutoScalingGroups'][0]['Instances'])):
+			instances.append(asg_describe['AutoScalingGroups'][0]['Instances'][n]['InstanceId'])
 
 		print "Stopping ASG: %s" % asg_name
 
@@ -107,11 +114,22 @@ def stop_asg(asg_names):
 			print "Seems like instances in ASG: %s already stopped" % asg_name
 			continue
 
+		#Updating max,min,desired instances to 0 in ASG
 		client.update_auto_scaling_group(
 		AutoScalingGroupName=asg_name,
 		MinSize=0,
 		MaxSize=0,
 		DesiredCapacity=0)
+
+		#Checking whether all instances in ASG start stoping
+		for instance in instances:
+			inst_statuse = 'running'
+			while inst_statuse == 'running':
+				inst_statuse = client_ec2.describe_instances(InstanceIds=[instance])['Reservations'][0]['Instances'][0]['State']['Name']
+				print "Instance_id: %s is still running. Waiting for it to be stopped." % instance
+				time.sleep( 30 )
+
+		print "Environment successfully stopped."
 	
 
 def restart_asg(env_name):
