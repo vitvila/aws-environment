@@ -84,8 +84,9 @@ def stop_asg(asg_names):
 			inst_statuse = 'running'
 			while inst_statuse == 'running':
 				inst_statuse = client_ec2.describe_instances(InstanceIds=[instance])['Reservations'][0]['Instances'][0]['State']['Name']
-				print "Instance_id: %s is still running. Waiting for it to start stopping." % instance
-				time.sleep( 10 )
+				print "Instance_id: %s is still running. Waiting for it to be stopped." % instance
+				time.sleep( 30 )
 
+		print "Environment successfully stopped."
 
 stop_asg(['BE_asg-002'])

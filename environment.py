@@ -1,29 +1,35 @@
+
 # Usage: /home/scripts/environment.py start|stop|restart|create|remove ENV_NAME
 
 import sys
 import boto3
 import time
+import json
 
 
 #Variables
 
 # AWS Access Key ID
-aws_key_id=''
+#aws_key_id=''
 # AWS Secret Key
-aws_secret_key=''
+#aws_secret_key=''
 # Region
-aws_region=''
+#aws_region=''
 #script's arguments
 args = sys.argv
 
+#check_config()
+with open('environment.json', 'r') as json_data_file:
+    conf = json.load(json_data_file)
 
-
+print conf['AutoScalingGroups'][0]['AutoScalingGroupName']
+print ""
 
 #=========Check Usage=========
 
 def check_usage(args):
 	arg1 = ["start","stop","restart","create","remove"]
-	arg2 = ENV_NAME #Env name from conf file
+	arg2 = 'ENV_NAME' #Env name from conf file
 
 	if len(args) != 3:
 		print "Wrong usage!!! Please use: environment.py start|stop|restart|create|remove ENV_NAME"
@@ -38,7 +44,7 @@ def check_usage(args):
 		sys.exit(1)		
 
 
-#=========Check Config=========
+#=========Simple Check Config=========
 
 def check_config():
 	if os.path.isfile("environment.conf") == False:
@@ -50,51 +56,53 @@ def check_config():
 #=========Start/Stop/Restart=========
 
 def start_asg(asg_names):
-    
-    #usage: start_asg(['BE_asg-002'])
-    # for loop to start each ASG
 
-    for asg_name in asg_names:
-   
-        #Needed info from config file
-        #asg_names = ['string',]
-        MinSize="From Conf"
-        MaxSize="From Conf"
-        DesiredCapacity="From Conf"
+	#usage: start_asg(['BE_asg-002'])
+	# for loop to start each ASG
 
-        print "Starting ASG: %s" % asg_name
-        client = boto3.client('autoscaling')
-        asg_describe = client.describe_auto_scaling_groups(AutoScalingGroupNames=[asg_name])
-        
-        current_min_size = asg_describe['AutoScalingGroups'][0]['MinSize']
-    	current_min_size = asg_describe['AutoScalingGroups'][0]['MinSize']
-    	current_max_size = asg_describe['AutoScalingGroups'][0]['MaxSize']
-    	current_desired_size = asg_describe['AutoScalingGroups'][0]['DesiredCapacity']
-        
-        # Checking if instances are still running in asg
-        if current_max_size > 0 and current_desired_size > 0:
-            print "Seems like instances in ASG: %s are still running" % asg_name
-            continue
+	for asg_name in asg_names:
 
-    	#Update Max, Min, Desired amount of instances in ASG
-        client.update_auto_scaling_group(
-        AutoScalingGroupName=asg_name,
-        MinSize=MinSize,
-        MaxSize=MaxSize,
-        DesiredCapacity=DesiredCapacity)
-	
+		#Needed info from config file
+		#asg_names = ['string',]
+		MinSize="From Conf"
+		MaxSize="From Conf"
+		DesiredCapacity="From Conf"
+
+		print "Starting ASG: %s" % asg_name
+		client = boto3.client('autoscaling')
+		asg_describe = client.describe_auto_scaling_groups(AutoScalingGroupNames=[asg_name])
+
+		current_min_size = asg_describe['AutoScalingGroups'][0]['MinSize']
+		current_min_size = asg_describe['AutoScalingGroups'][0]['MinSize']
+		current_max_size = asg_describe['AutoScalingGroups'][0]['MaxSize']
+		current_desired_size = asg_describe['AutoScalingGroups'][0]['DesiredCapacity']
+
+		# Checking if instances are still running in asg
+		if current_max_size > 0 and current_desired_size > 0:
+			print "Seems like instances in ASG: %s are still running" % asg_name
+			continue
+
+		#Update Max, Min, Desired amount of instances in ASG
+		client.update_auto_scaling_group(
+		AutoScalingGroupName=asg_name,
+		MinSize=MinSize,
+		MaxSize=MaxSize,
+		DesiredCapacity=DesiredCapacity)
+
+		time.sleep(60)
+		print "Environment is starting."
 	
 def stop_asg(asg_names):
-	
+
 	#usage: stop_asg(['BE_asg-002'])
-    
-    # for loop to stop each ASG
+
+	# for loop to stop each ASG
 	for asg_name in asg_names:
 	    
-	    #Needed info from config file
-	    #ASG_NAME_FROM_CONF = []
+		#Needed info from config file
+		#ASG_NAME_FROM_CONF = []
 
-	    #Variables
+		#Variables
 		client = boto3.client('autoscaling')
 		client_ec2 = boto3.client('ec2')
 		asg_describe = client.describe_auto_scaling_groups(AutoScalingGroupNames=[asg_name])
@@ -121,7 +129,7 @@ def stop_asg(asg_names):
 		MaxSize=0,
 		DesiredCapacity=0)
 
-		#Checking whether all instances in ASG start stoping
+		#Checking whether all instances in ASG are stoping
 		for instance in instances:
 			inst_statuse = 'running'
 			while inst_statuse == 'running':
@@ -133,24 +141,17 @@ def stop_asg(asg_names):
 	
 
 def restart_asg(env_name):
+	client = boto3.client('autoscaling')
+	asg_describe = client.describe_auto_scaling_groups(AutoScalingGroupNames=[ASG_NAME_FROM_CONF])
+	current_max_size = asg_describe['AutoScalingGroups'][0]['MaxSize']
+	current_desired_size = asg_describe['AutoScalingGroups'][0]['DesiredCapacity']
 
-    
-    client = boto3.client('autoscaling')
-    asg_describe = client.describe_auto_scaling_groups(AutoScalingGroupNames=[ASG_NAME_FROM_CONF])
-    
-    current_max_size = asg_describe{'AutoScalingGroups'[{"MaxSize"}]}
-    current_desired_size = asg_describe{'AutoScalingGroups'[{"DesiredCapacity"}]}
-
-    #Checking if instances already stopped
-    if current_max_size = 0 and current_desired_size = 0:
-        start_asg()    
+	#Checking if instances already stopped
+	if current_max_size == 0 and current_desired_size == 0:
+		start_asg()
 	else:
-        stop_asg()
-	 	start_asg()
-
-
-
-
+		stop_asg()
+		start_asg()
 
 
 #=========Create==============================================================
@@ -313,21 +314,18 @@ def remove_elb(env_name):
 
 #=========Tidy_up_configuration=================================================
 def config_changes(env_name):
-
-
-
+	pass
 
 #=========Main==================================================================
 
-if args[1] == "start":
-	start_asg("env_name")
+check_usage(args)
 
+if args[1] == "start":
+	start_asg()
 elif args[1] == "stop":
 	stop_asg()
-
 elif args[1] == "restart":
-	stop_asg("env_name")
-	start_asg("env_name")
+	restart_asg()
 
 elif args[1] == "create":
 	pass
@@ -337,27 +335,6 @@ elif args[1] == "remove":
 
 
 
-# AWS random code. Archive=========================================================
-"""
-conn_to_region = boto.ec2.connect_to_region("us-west-2", aws_access_key_id='<aws access key>', aws_secret_access_key='<aws secret key>')
-#Stopping/Terminating
-ec2.instances.filter(InstanceIds=ids).stop()
-ec2.instances.filter(InstanceIds=ids).terminate()
-# ASG
-conn = boto.connect_autoscale()
-config = LaunchConfiguration(name='foo', image_id='ami-abcd1234', key_name='foo.pem')
-conn.create_launch_configuration(config)
-# Botto3 examples
-In [19]: rc = ec2.resource.create_instances(
-    ImageId = ec2.getami('NetBSD*64*6.1.5*'),
-    MinCount = 1,
-    MaxCount = 1,
-    KeyName = 'mysshpemkey',
-    InstanceType = 'm3.medium',
-    PrivateIpAddress = '10.10.0.1',
-    SubnetId = ec2.get_id_from_nametag('subnets', 'examplesubnet')
-)
-In [20]: print(rc[0].id)
-i-b1774f1b
-Status API Training Shop Blog About
-© 2016 GitHub, Inc. Terms Privacy Security Contact Help
+
+
+
