@@ -1,3 +1,5 @@
+
+
 '''## Test Python Script
 
 import boto3
@@ -39,7 +41,7 @@ for instance in instances:
 	 
 	
 print current_max_size,current_min_size,current_desired_size
-'''
+
 #============================================== TEST functions ===============================================
 
 import boto3

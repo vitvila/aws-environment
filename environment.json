@@ -1,3 +1,4 @@
+
 {
 	"AutoScalingGroups": [
 	{
@@ -44,7 +45,7 @@
 	],
 	"LoadBalancer": [
 	{
-		"LoadBalancerName": "string",
+		"LoadBalancerName": "ELB1",
 		"DNSName": "string",
 		"ListenerDescriptions":
 		{
@@ -55,7 +56,7 @@
 		}
 	},
 	{			
-		"LoadBalancerName": "string",
+		"LoadBalancerName": "ELB2",
 		"DNSName": "string",
 		"ListenerDescriptions":
 		{

@@ -44,7 +44,7 @@ def check_usage(args):
 		sys.exit(1)		
 
 
-#=========Simple Check Config=========
+#=========Simple Config Check=========
 
 def check_config():
 	if os.path.isfile("environment.conf") == False:
@@ -281,35 +281,51 @@ def create_elb(env_name):
 
 #=========Remove==============================================================
 
-def remove_asg(env_name):
+def remove_asg():
 
-	client = boto3.client('autoscaling')
+	#Initilizing ASG names from conf
+	asg_names = []
+	for n in range(len(conf['LaunchConfiguration'])):
+		 asg_names.append(conf['AutoScalingGroups'][n]['AutoScalingGroupName'])
+	print asg_names
 
-	response = client.delete_auto_scaling_group(
-    AutoScalingGroupName='string',
-    ForceDelete=True|False
-    )
+	client_asg = boto3.client('autoscaling')
+
+	#Removing ASGs
+	for asg_name in asg_names:
+		print "Removing ASG: %s" % asg_name
+		#client.delete_auto_scaling_group(AutoScalingGroupName=asg_name)
 
 
-def remove_launch_config(env_name):
-
-	client = boto3.client('autoscaling')
-
-	response = client.delete_launch_configuration(
-    LaunchConfigurationName='string'
-    )
-
-def remove_elb(env_name):
-
-	client = boto3.client('autoscaling')
+def remove_launch_config():
 	
-	response = client.delete_load_balancer(
-    LoadBalancerName='string'
-    )
+	#Initilizing launch_conf_names from conf
+	launch_conf_names = []
+	for n in range(len(conf['LaunchConfiguration'])):
+		 launch_conf_names.append(conf['LaunchConfiguration'][n]['LaunchConfigurationName'])
+	print launch_conf_names
 
+	client_asg = boto3.client('autoscaling')
 
+	#Removing launch configuratoins
+	for launch_conf_name in launch_conf_names:
+		print "Removing Launch Configuration: %s" % launch_conf_name
+		client_asg.delete_launch_configuration(LaunchConfigurationName=launch_conf_name)
 
+def remove_elb():
+	
+	#Initilizing ELB_names list with ELB's from conf
+	ELB_names = []
+	for n in range(len(conf['LoadBalancer'])):
+		 ELB_names.append(conf['LoadBalancer'][n]['LoadBalancerName'])
+	print ELB_names
 
+	client_elb = boto3.client('elb')
+	
+	#Removing ELBs
+	for ELB_name in ELB_names:
+		print "Removing Load Balancer: %s" % ELB_name
+		client_elb.delete_load_balancer(LoadBalancerName=ELB_name)
 
 
 #=========Tidy_up_configuration=================================================
@@ -318,6 +334,7 @@ def config_changes(env_name):
 
 #=========Main==================================================================
 
+remove_asg()
 check_usage(args)
 
 if args[1] == "start":
@@ -331,9 +348,6 @@ elif args[1] == "create":
 	pass
 elif args[1] == "remove":
 	pass
-
-
-
 
 
 
