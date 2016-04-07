@@ -7,8 +7,6 @@ import time
 import json
 
 
-#Variables
-
 # AWS Access Key ID
 #aws_key_id=''
 # AWS Secret Key
@@ -69,8 +67,8 @@ def start_asg(asg_names):
 		DesiredCapacity="From Conf"
 
 		print "Starting ASG: %s" % asg_name
-		client = boto3.client('autoscaling')
-		asg_describe = client.describe_auto_scaling_groups(AutoScalingGroupNames=[asg_name])
+		client_asg = boto3.client('autoscaling')
+		asg_describe = client_asg.describe_auto_scaling_groups(AutoScalingGroupNames=[asg_name])
 
 		current_min_size = asg_describe['AutoScalingGroups'][0]['MinSize']
 		current_min_size = asg_describe['AutoScalingGroups'][0]['MinSize']
@@ -83,7 +81,7 @@ def start_asg(asg_names):
 			continue
 
 		#Update Max, Min, Desired amount of instances in ASG
-		client.update_auto_scaling_group(
+		client_asg.update_auto_scaling_group(
 		AutoScalingGroupName=asg_name,
 		MinSize=MinSize,
 		MaxSize=MaxSize,
@@ -96,16 +94,16 @@ def stop_asg(asg_names):
 
 	#usage: stop_asg(['BE_asg-002'])
 
-	# for loop to stop each ASG
+	# 'for' loop to stop each ASG
 	for asg_name in asg_names:
 	    
 		#Needed info from config file
 		#ASG_NAME_FROM_CONF = []
 
 		#Variables
-		client = boto3.client('autoscaling')
+		client_asg = boto3.client('autoscaling')
 		client_ec2 = boto3.client('ec2')
-		asg_describe = client.describe_auto_scaling_groups(AutoScalingGroupNames=[asg_name])
+		asg_describe = client_asg.describe_auto_scaling_groups(AutoScalingGroupNames=[asg_name])
 		current_min_size = asg_describe['AutoScalingGroups'][0]['MinSize']
 		current_max_size = asg_describe['AutoScalingGroups'][0]['MaxSize']
 		current_desired_size = asg_describe['AutoScalingGroups'][0]['DesiredCapacity']
@@ -123,7 +121,7 @@ def stop_asg(asg_names):
 			continue
 
 		#Updating max,min,desired instances to 0 in ASG
-		client.update_auto_scaling_group(
+		client_asg.update_auto_scaling_group(
 		AutoScalingGroupName=asg_name,
 		MinSize=0,
 		MaxSize=0,
@@ -141,8 +139,8 @@ def stop_asg(asg_names):
 	
 
 def restart_asg(env_name):
-	client = boto3.client('autoscaling')
-	asg_describe = client.describe_auto_scaling_groups(AutoScalingGroupNames=[ASG_NAME_FROM_CONF])
+	client_asg = boto3.client('autoscaling')
+	asg_describe = client_asg.describe_auto_scaling_groups(AutoScalingGroupNames=[ASG_NAME_FROM_CONF])
 	current_max_size = asg_describe['AutoScalingGroups'][0]['MaxSize']
 	current_desired_size = asg_describe['AutoScalingGroups'][0]['DesiredCapacity']
 
@@ -158,9 +156,9 @@ def restart_asg(env_name):
 
 def create_launch_conf(env_name):
 
-	client = boto3.client('autoscaling')
+	client_asg = boto3.client('autoscaling')
 
-	response = client.create_launch_configuration(
+	response = client_asg.create_launch_configuration(
     LaunchConfigurationName='string',
     ImageId='string',
     KeyName='string',
@@ -205,9 +203,9 @@ def create_asg(env_name):
 	
 	# create_launch_conf()
 
-	client = boto3.client('autoscaling')
+	client_asg = boto3.client('autoscaling')
 
-	response = client.create_auto_scaling_group(
+	response = client_asg.create_auto_scaling_group(
     AutoScalingGroupName='string',
     LaunchConfigurationName='string',
     InstanceId='string',
@@ -243,9 +241,9 @@ def create_asg(env_name):
 
 def create_elb(env_name):
 	
-	client = boto3.client('elb')
+	client_elb = boto3.client('elb')
 
-	response = client.create_load_balancer(
+	response = client_elb.create_load_balancer(
     LoadBalancerName='string',
     Listeners=[
         {
@@ -294,7 +292,7 @@ def remove_asg():
 	#Removing ASGs
 	for asg_name in asg_names:
 		print "Removing ASG: %s" % asg_name
-		#client.delete_auto_scaling_group(AutoScalingGroupName=asg_name)
+		client_asg.delete_auto_scaling_group(AutoScalingGroupName=asg_name)
 
 
 def remove_launch_config():
