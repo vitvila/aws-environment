@@ -3,68 +3,66 @@
 	"AutoScalingGroups": [
 	{
 		"AutoScalingGroupName": "BE_asg-002",
-		"LaunchConfigurationName": "string",
-		"MinSize": 123,
-		"MaxSize": 123,
-		"DesiredCapacity": 123,
+		"LaunchConfigurationName": "BE_launch_conf",
+		"MinSize": 2,
+		"MaxSize": 2,
+		"DesiredCapacity": 2,
 		"AvailabilityZones": ["string"],
-		"LoadBalancerNames":["string"],
-		"HealthCheckType": "string",
-		"TerminationPolicies": "string"
+		"LoadBalancerNames": ["string"],
+		"TerminationPolicies": ["string"]
 	},
 	{
 
 		"AutoScalingGroupName": "FE_asg-002",
-		"LaunchConfigurationName": "string",
-		"MinSize": 123,
-		"MaxSize": 123,
-		"DesiredCapacity": 123,
+		"LaunchConfigurationName": "AutoScaling-Security-Group-1",
+		"MinSize": 3,
+		"MaxSize": 3,
+		"DesiredCapacity": 3,
 		"AvailabilityZones": ["string"],
-		"LoadBalancerNames":["string"],
-		"HealthCheckType": "string",
-		"TerminationPolicies": "string"
+		"LoadBalancerNames": ["string"],
+		"TerminationPolicies": ["string"]
 	}
 	],
 	"LaunchConfiguration": [
 	{
-		"LaunchConfigurationName": "string",
-		"ImageId": "string",
-		"KeyName": "string",
-		"SecurityGroups": "string",
-		"InstanceType": "string",
-		"AssociatePublicIpAddress": 123
+		"LaunchConfigurationName": "FE_lauch_conf",
+		"ImageId": "ami-30820343",
+		"KeyName": "rsa_key_mac",
+		"SecurityGroups": ["AutoScaling-Security-Group-1"],
+		"InstanceType": "t2.micro",
+		"AssociatePublicIpAddress": "False"
 	},
 	{
-		"LaunchConfigurationName": "string",
-		"ImageId": "string",
-		"KeyName": "string",
-		"SecurityGroups": "string",
-		"InstanceType": "string",
-		"AssociatePublicIpAddress": 123
+		"LaunchConfigurationName": "BE_launch_conf",
+		"ImageId": "ami-5881002b",
+		"KeyName": "rsa_key_mac",
+		"SecurityGroups": ["BE_ELB"],
+		"InstanceType": "t2.micro",
+		"AssociatePublicIpAddress": false
 	}
 	],
 	"LoadBalancer": [
 	{
 		"LoadBalancerName": "ELB1",
-		"DNSName": "string",
-		"ListenerDescriptions":
+		"Listeners": [
 		{
-			"Protocol": "string",
-			"LoadBalancerPort": 123,
-			"InstanceProtocol": "string",
-			"InstancePort": 123
+			"Protocol": "HTTPS",
+			"LoadBalancerPort": 443,
+			"InstanceProtocol": "HTTP",
+			"InstancePort": 80
 		}
+		]
 	},
 	{			
 		"LoadBalancerName": "ELB2",
-		"DNSName": "string",
-		"ListenerDescriptions":
+		"Listeners": [
 		{
-			"Protocol": "string",
-			"LoadBalancerPort": 123,
-			"InstanceProtocol": "string",
-			"InstancePort": 123
+			"Protocol": "HTTP",
+			"LoadBalancerPort": 80,
+			"InstanceProtocol": "HTTP",
+			"InstancePort": 80
 		}
+		]
 	}
 	]
 }

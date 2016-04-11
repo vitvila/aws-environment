@@ -20,8 +20,6 @@ args = sys.argv
 with open('environment.json', 'r') as json_data_file:
     conf = json.load(json_data_file)
 
-print conf['AutoScalingGroups'][0]['AutoScalingGroupName']
-print ""
 
 #=========Check Usage=========
 
@@ -154,126 +152,121 @@ def restart_asg(env_name):
 
 #=========Create==============================================================
 
-def create_launch_conf(env_name):
+def create_launch_conf():
 
 	client_asg = boto3.client('autoscaling')
-
-	response = client_asg.create_launch_configuration(
-    LaunchConfigurationName='string',
-    ImageId='string',
-    KeyName='string',
-    SecurityGroups=[
-        'string',
-    ],
-    ClassicLinkVPCId='string',
-    ClassicLinkVPCSecurityGroups=[
-        'string',
-    ],
-    UserData='string',
-    InstanceId='string',
-    InstanceType='string',
-    KernelId='string',
-    RamdiskId='string',
-    BlockDeviceMappings=[
-        {
-            'VirtualName': 'string',
-            'DeviceName': 'string',
-            'Ebs': {
-                'SnapshotId': 'string',
-                'VolumeSize': 123,
-                'VolumeType': 'string',
-                'DeleteOnTermination': True|False,
-                'Iops': 123,
-                'Encrypted': True|False
-            },
-            'NoDevice': True|False
-        },
-    ],
-    InstanceMonitoring={
-        'Enabled': True|False
-    },
-    SpotPrice='string',
-    IamInstanceProfile='string',
-    EbsOptimized=True|False,
-    AssociatePublicIpAddress=True|False,
-    PlacementTenancy='string'
-	)
-
-def create_asg(env_name):
 	
-	# create_launch_conf()
+	#Initilizing launch_conf_names from conf
+	launch_conf_names = []
+	for n in range(len(conf['LaunchConfiguration'])):
+		 launch_conf_names.append(conf['LaunchConfiguration'][n]['LaunchConfigurationName'])
+	
+	#Creating launch configuratoins
+	for n in range(len(launch_conf_names)):
+		image_id =  conf['LaunchConfiguration'][n]['ImageId']
+		key_name = conf['LaunchConfiguration'][n]['KeyName']
+		instance_type = conf['LaunchConfiguration'][n]['InstanceType']
+		associate_ip = conf['LaunchConfiguration'][n]['AssociatePublicIpAddress']
+		# 'for' loop to initialize list of security groups
+		security_groups = []
+		for i in range(len(conf['LaunchConfiguration'][n]['SecurityGroups'])):
+			security_groups.append(conf['LaunchConfiguration'][n]['SecurityGroups'][i])
 
+		print "Creating Launch Configuration: %s" %  launch_conf_names[n]
+		print image_id, key_name, instance_type, associate_ip, security_groups
+
+		'''client_asg.create_launch_configuration(
+		LaunchConfigurationName=launch_conf_names[n],
+		ImageId=image_id,
+		KeyName=key_name,
+		SecurityGroups=security_groups,
+		InstanceType=instance_type,
+		AssociatePublicIpAddress=associate_ip)'''
+
+def create_asg():
+	
 	client_asg = boto3.client('autoscaling')
-
-	response = client_asg.create_auto_scaling_group(
-    AutoScalingGroupName='string',
-    LaunchConfigurationName='string',
-    InstanceId='string',
-    MinSize=123,
-    MaxSize=123,
-    DesiredCapacity=123,
-    DefaultCooldown=123,
-    AvailabilityZones=[
-        'string',
-    ],
-    LoadBalancerNames=[
-        'string',
-    ],
-    HealthCheckType='string',
-    HealthCheckGracePeriod=123,
-    PlacementGroup='string',
-    VPCZoneIdentifier='string',
-    TerminationPolicies=[
-        'string',
-    ],
-    NewInstancesProtectedFromScaleIn=True|False,
-    Tags=[
-        {
-            'ResourceId': 'string',
-            'ResourceType': 'string',
-            'Key': 'string',
-            'Value': 'string',
-            'PropagateAtLaunch': True|False
-        },
-    ]
-	)
+	
+	#Initilizing ASG names from conf
+	asg_names = []
+	for n in range(len(conf['AutoScalingGroups'])):
+		 asg_names.append(conf['AutoScalingGroups'][n]['AutoScalingGroupName'])
+	print asg_names
+	
+	#Creating ASGs
+	for n in range(len(asg_names)):
+		launch_conf_name =  conf['AutoScalingGroups'][n]['LaunchConfigurationName']
+		min_size = conf['AutoScalingGroups'][n]['MinSize']
+		max_size = conf['AutoScalingGroups'][n]['MaxSize']
+		desired_size = conf['AutoScalingGroups'][n]['DesiredCapacity']
+		
+		#'for' loop to initialize list of availability zones
+		availability_zones = []
+		for i in range(len(conf['AutoScalingGroups'][n]['AvailabilityZones'])):
+			availability_zones.append(conf['AutoScalingGroups'][n]['AvailabilityZones'][i])
+		#'for' loop to initialize list of load balancer names
+		load_balancer_names = []
+		for i in range(len(conf['AutoScalingGroups'][n]['LoadBalancerNames'])):
+			load_balancer_names.append(conf['AutoScalingGroups'][n]['LoadBalancerNames'][i])
+		#'for' loop to initialize list of termination policies
+		termination_policies = []
+		for i in range(len(conf['AutoScalingGroups'][n]['TerminationPolicies'])):
+			termination_policies.append(conf['AutoScalingGroups'][n]['TerminationPolicies'][i])
 
 
-def create_elb(env_name):
+
+		print "Creating Auto Scaling Group: %s" %  asg_names[n]
+		print asg_names[n], launch_conf_name, min_size, max_size, desired_size, availability_zones, load_balancer_names, termination_policies
+
+		'''client_asg.create_auto_scaling_group(
+		AutoScalingGroupName='string',
+		LaunchConfigurationName='string',
+		MinSize=123,
+		MaxSize=123,
+		DesiredCapacity=123,
+		AvailabilityZones=['string'],
+		LoadBalancerNames=['string',],
+		TerminationPolicies=['string']
+		)'''
+
+
+def create_elb():
 	
 	client_elb = boto3.client('elb')
-
-	response = client_elb.create_load_balancer(
-    LoadBalancerName='string',
-    Listeners=[
-        {
-            'Protocol': 'string',
-            'LoadBalancerPort': 123,
-            'InstanceProtocol': 'string',
-            'InstancePort': 123,
-            'SSLCertificateId': 'string'
-        },
-    ],
-    AvailabilityZones=[
-        'string',
-    ],
-    Subnets=[
-        'string',
-    ],
-    SecurityGroups=[
-        'string',
-    ],
-    Scheme='string',
-    Tags=[
-        {
-            'Key': 'string',
-            'Value': 'string'
-        },
-    ]
-    )
+	
+	#Initilizing launch_conf_names from conf file
+	elb_names = []
+	for n in range(len(conf['LoadBalancer'])):
+		 elb_names.append(conf['LoadBalancer'][n]['LoadBalancerName'])
+	
+	#Creating Load Balancers
+	for n in range(len(elb_names)):
+		# 'for' loop to initialize list of protocols and ports for ELB and Instances attached
+		listener_elb_protocol = []
+		listener_elb_port = []
+		listener_instance_protocol = []
+		listener_instance_port = []
+		
+		for i in range(len(conf['LoadBalancer'][n]['Listeners'])):
+			listener_elb_protocol.append(conf['LoadBalancer'][n]['Listeners'][i]["Protocol"])
+			listener_elb_port.append(conf['LoadBalancer'][n]['Listeners'][i]["LoadBalancerPort"])
+			listener_instance_protocol.append(conf['LoadBalancer'][n]['Listeners'][i]["InstanceProtocol"])
+			listener_instance_port.append(conf['LoadBalancer'][n]['Listeners'][i]["InstancePort"])
 
 
+		print "Creating Load Balancer: %s" %  elb_names[n]
+		print listener_elb_protocol, listener_elb_port, listener_instance_protocol, listener_instance_port
 
+		'''client_elb.create_load_balancer(
+	    LoadBalancerName='string',
+	    Listeners=[
+	        {
+	            'Protocol': 'string',
+	            'LoadBalancerPort': 123,
+	            'InstanceProtocol': 'string',
+	            'InstancePort': 123,
+	        },
+	    ])'''
 
 
 
@@ -283,7 +276,7 @@ def remove_asg():
 
 	#Initilizing ASG names from conf
 	asg_names = []
-	for n in range(len(conf['LaunchConfiguration'])):
+	for n in range(len(conf['AutoScalingGroups'])):
 		 asg_names.append(conf['AutoScalingGroups'][n]['AutoScalingGroupName'])
 	print asg_names
 
@@ -310,6 +303,7 @@ def remove_launch_config():
 		print "Removing Launch Configuration: %s" % launch_conf_name
 		client_asg.delete_launch_configuration(LaunchConfigurationName=launch_conf_name)
 
+
 def remove_elb():
 	
 	#Initilizing ELB_names list with ELB's from conf
@@ -332,7 +326,7 @@ def config_changes(env_name):
 
 #=========Main==================================================================
 
-remove_asg()
+create_elb()
 check_usage(args)
 
 if args[1] == "start":
