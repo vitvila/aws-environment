@@ -1,8 +1,6 @@
 # aws-environment
 
-
-
-
+Usage: /home/scripts/environment.py start|stop|restart|create|remove ENV_NAME
 
 Access to AWS cloud:
 
@@ -10,3 +8,4 @@ Access to AWS cloud:
 ~/.aws/credentials
 Region in:
 ~/.aws/config
+
