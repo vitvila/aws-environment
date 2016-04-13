@@ -3,18 +3,40 @@
 
 import sys
 import boto3
-import time
 import json
+import time
 
 
-# AWS Access Key ID
-#aws_key_id=''
-# AWS Secret Key
-#aws_secret_key=''
-# Region
-#aws_region=''
-#script's arguments
+# AWS Access Key ID, AWS Secret Key are set in:
+# ~/.aws/credentials
+# Region is set in:
+# ~/.aws/config
+
+#Boto services
+client_asg = boto3.client('autoscaling')
+client_ec2 = boto3.client('ec2')
+client_elb = boto3.client('elb')
+
+#Scripts arguments
 args = sys.argv
+
+#Initilizing ASG names from conf file
+asg_names = []
+for n in range(len(conf['AutoScalingGroups'])):
+	asg_names.append(conf['AutoScalingGroups'][n]['AutoScalingGroupName'])
+
+#Initilizing launch configuration names from conf file
+launch_conf_names = []
+for n in range(len(conf['LaunchConfiguration'])):
+	launch_conf_names.append(conf['LaunchConfiguration'][n]['LaunchConfigurationName'])
+
+#Initilizing ELB names from conf file
+elb_names = []
+for n in range(len(conf['LoadBalancer'])):
+	elb_names.append(conf['LoadBalancer'][n]['LoadBalancerName'])
+
+
+
 
 #check_config()
 with open('environment.json', 'r') as json_data_file:
@@ -40,10 +62,10 @@ def check_usage(args):
 		sys.exit(1)		
 
 
-#=========Simple Config Check=========
+#=========Conf file check=========
 
 def check_config():
-	if os.path.isfile("environment.conf") == False:
+	if os.path.isfile("environment.json") == False:
 		print "Please make sure you have a valid configuration file!"
 		sys.exit(1)
 
@@ -58,14 +80,11 @@ def start_asg(asg_names):
 
 	for asg_name in asg_names:
 
-		#Needed info from config file
-		#asg_names = ['string',]
 		MinSize="From Conf"
 		MaxSize="From Conf"
 		DesiredCapacity="From Conf"
 
 		print "Starting ASG: %s" % asg_name
-		client_asg = boto3.client('autoscaling')
 		asg_describe = client_asg.describe_auto_scaling_groups(AutoScalingGroupNames=[asg_name])
 
 		current_min_size = asg_describe['AutoScalingGroups'][0]['MinSize']
@@ -90,8 +109,6 @@ def start_asg(asg_names):
 	
 def stop_asg(asg_names):
 
-	#usage: stop_asg(['BE_asg-002'])
-
 	# 'for' loop to stop each ASG
 	for asg_name in asg_names:
 	    
@@ -99,8 +116,6 @@ def stop_asg(asg_names):
 		#ASG_NAME_FROM_CONF = []
 
 		#Variables
-		client_asg = boto3.client('autoscaling')
-		client_ec2 = boto3.client('ec2')
 		asg_describe = client_asg.describe_auto_scaling_groups(AutoScalingGroupNames=[asg_name])
 		current_min_size = asg_describe['AutoScalingGroups'][0]['MinSize']
 		current_max_size = asg_describe['AutoScalingGroups'][0]['MaxSize']
@@ -134,39 +149,20 @@ def stop_asg(asg_names):
 				time.sleep( 30 )
 
 		print "Environment successfully stopped."
-	
-
-def restart_asg(env_name):
-	client_asg = boto3.client('autoscaling')
-	asg_describe = client_asg.describe_auto_scaling_groups(AutoScalingGroupNames=[ASG_NAME_FROM_CONF])
-	current_max_size = asg_describe['AutoScalingGroups'][0]['MaxSize']
-	current_desired_size = asg_describe['AutoScalingGroups'][0]['DesiredCapacity']
-
-	#Checking if instances already stopped
-	if current_max_size == 0 and current_desired_size == 0:
-		start_asg()
-	else:
-		stop_asg()
-		start_asg()
 
 
 #=========Create==============================================================
 
-def create_launch_conf():
-
-	client_asg = boto3.client('autoscaling')
-	
-	#Initilizing launch_conf_names from conf
-	launch_conf_names = []
-	for n in range(len(conf['LaunchConfiguration'])):
-		 launch_conf_names.append(conf['LaunchConfiguration'][n]['LaunchConfigurationName'])
+def create_launch_conf(launch_conf_names):
 	
 	#Creating launch configuratoins
 	for n in range(len(launch_conf_names)):
+		
 		image_id =  conf['LaunchConfiguration'][n]['ImageId']
 		key_name = conf['LaunchConfiguration'][n]['KeyName']
 		instance_type = conf['LaunchConfiguration'][n]['InstanceType']
 		associate_ip = conf['LaunchConfiguration'][n]['AssociatePublicIpAddress']
+		
 		# 'for' loop to initialize list of security groups
 		security_groups = []
 		for i in range(len(conf['LaunchConfiguration'][n]['SecurityGroups'])):
@@ -183,15 +179,7 @@ def create_launch_conf():
 		InstanceType=instance_type,
 		AssociatePublicIpAddress=associate_ip)'''
 
-def create_asg():
-	
-	client_asg = boto3.client('autoscaling')
-	
-	#Initilizing ASG names from conf
-	asg_names = []
-	for n in range(len(conf['AutoScalingGroups'])):
-		 asg_names.append(conf['AutoScalingGroups'][n]['AutoScalingGroupName'])
-	print asg_names
+def create_asg(asg_names):
 	
 	#Creating ASGs
 	for n in range(len(asg_names)):
@@ -230,15 +218,8 @@ def create_asg():
 		)'''
 
 
-def create_elb():
-	
-	client_elb = boto3.client('elb')
-	
-	#Initilizing launch_conf_names from conf file
-	elb_names = []
-	for n in range(len(conf['LoadBalancer'])):
-		 elb_names.append(conf['LoadBalancer'][n]['LoadBalancerName'])
-	
+def create_elb(elb_names):
+			
 	#Creating Load Balancers
 	for n in range(len(elb_names)):
 		# 'for' loop to initialize list of protocols and ports for ELB and Instances attached
@@ -246,7 +227,7 @@ def create_elb():
 		listener_elb_port = []
 		listener_instance_protocol = []
 		listener_instance_port = []
-		
+
 		for i in range(len(conf['LoadBalancer'][n]['Listeners'])):
 			listener_elb_protocol.append(conf['LoadBalancer'][n]['Listeners'][i]["Protocol"])
 			listener_elb_port.append(conf['LoadBalancer'][n]['Listeners'][i]["LoadBalancerPort"])
@@ -272,15 +253,7 @@ def create_elb():
 
 #=========Remove==============================================================
 
-def remove_asg():
-
-	#Initilizing ASG names from conf
-	asg_names = []
-	for n in range(len(conf['AutoScalingGroups'])):
-		 asg_names.append(conf['AutoScalingGroups'][n]['AutoScalingGroupName'])
-	print asg_names
-
-	client_asg = boto3.client('autoscaling')
+def remove_asg(asg_names):
 
 	#Removing ASGs
 	for asg_name in asg_names:
@@ -288,15 +261,7 @@ def remove_asg():
 		client_asg.delete_auto_scaling_group(AutoScalingGroupName=asg_name)
 
 
-def remove_launch_config():
-	
-	#Initilizing launch_conf_names from conf
-	launch_conf_names = []
-	for n in range(len(conf['LaunchConfiguration'])):
-		 launch_conf_names.append(conf['LaunchConfiguration'][n]['LaunchConfigurationName'])
-	print launch_conf_names
-
-	client_asg = boto3.client('autoscaling')
+def remove_launch_config(launch_conf_names):
 
 	#Removing launch configuratoins
 	for launch_conf_name in launch_conf_names:
@@ -304,15 +269,7 @@ def remove_launch_config():
 		client_asg.delete_launch_configuration(LaunchConfigurationName=launch_conf_name)
 
 
-def remove_elb():
-	
-	#Initilizing ELB_names list with ELB's from conf
-	ELB_names = []
-	for n in range(len(conf['LoadBalancer'])):
-		 ELB_names.append(conf['LoadBalancer'][n]['LoadBalancerName'])
-	print ELB_names
-
-	client_elb = boto3.client('elb')
+def remove_elb(ELB_names):
 	
 	#Removing ELBs
 	for ELB_name in ELB_names:
@@ -321,25 +278,29 @@ def remove_elb():
 
 
 #=========Tidy_up_configuration=================================================
-def config_changes(env_name):
+def config_changes():
 	pass
 
 #=========Main==================================================================
 
-create_elb()
+
 check_usage(args)
 
 if args[1] == "start":
-	start_asg()
+	start_asg(asg_names)
 elif args[1] == "stop":
-	stop_asg()
+	stop_asg(asg_names)
 elif args[1] == "restart":
-	restart_asg()
+	stop_asg(asg_names)
+	start_asg(asg_names)
 
 elif args[1] == "create":
-	pass
+	create_launch_conf(launch_conf_names)
+	create_elb(ELB_names)
+	create_asg(asg_names)
+	
 elif args[1] == "remove":
-	pass
+	
 
 
 
