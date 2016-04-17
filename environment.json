@@ -2,22 +2,22 @@
 {
 	"AutoScalingGroups": [
 	{
-		"AutoScalingGroupName": "BE_asg-002",
+		"AutoScalingGroupName": "BE_asg-001",
 		"LaunchConfigurationName": "BE_launch_conf",
-		"MinSize": 2,
-		"MaxSize": 2,
-		"DesiredCapacity": 2,
+		"MinSize": 1,
+		"MaxSize": 1,
+		"DesiredCapacity": 1,
 		"AvailabilityZones": ["string"],
 		"LoadBalancerNames": ["string"],
 		"TerminationPolicies": ["string"]
 	},
 	{
 
-		"AutoScalingGroupName": "FE_asg-002",
+		"AutoScalingGroupName": "FE_asg-001",
 		"LaunchConfigurationName": "AutoScaling-Security-Group-1",
-		"MinSize": 3,
-		"MaxSize": 3,
-		"DesiredCapacity": 3,
+		"MinSize": 1,
+		"MaxSize": 1,
+		"DesiredCapacity": 1,
 		"AvailabilityZones": ["string"],
 		"LoadBalancerNames": ["string"],
 		"TerminationPolicies": ["string"]

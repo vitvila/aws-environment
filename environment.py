@@ -17,8 +17,21 @@ client_asg = boto3.client('autoscaling')
 client_ec2 = boto3.client('ec2')
 client_elb = boto3.client('elb')
 
+
 #Scripts arguments
 args = sys.argv
+
+
+#Handling exceptions if 'environment.json' file is not valid.
+try:
+	with open('environment.json', 'r') as json_data_file:
+		conf = json.load(json_data_file)
+except IOError:
+	print "Please make sure you have a valid 'environment.json' configuration file."
+	sys.exit(1)
+except ValueError:
+	print "Please check syntax of 'environment.json' configuration file."
+	sys.exit(1)
 
 #Initilizing ASG names from conf file
 asg_names = []
@@ -36,18 +49,11 @@ for n in range(len(conf['LoadBalancer'])):
 	elb_names.append(conf['LoadBalancer'][n]['LoadBalancerName'])
 
 
-
-
-#check_config()
-with open('environment.json', 'r') as json_data_file:
-    conf = json.load(json_data_file)
-
-
 #=========Check Usage=========
 
 def check_usage(args):
 	arg1 = ["start","stop","restart","create","remove"]
-	arg2 = 'ENV_NAME' #Env name from conf file
+	arg2 = 'ENV_NAME' #Env names from 
 
 	if len(args) != 3:
 		print "Wrong usage!!! Please use: environment.py start|stop|restart|create|remove ENV_NAME"
@@ -62,80 +68,80 @@ def check_usage(args):
 		sys.exit(1)		
 
 
-#=========Conf file check=========
-
-def check_config():
-	if os.path.isfile("environment.json") == False:
-		print "Please make sure you have a valid configuration file!"
-		sys.exit(1)
-
-
-
 #=========Start/Stop/Restart=========
 
 def start_asg(asg_names):
 
-	#usage: start_asg(['BE_asg-002'])
-	# for loop to start each ASG
+	# 'for' loop to start each ASG from conf file.
+	for n in range(len(asg_names)):
+		try:
+			#Conf file settings of asg
+			min_size = conf['AutoScalingGroups'][n]['MinSize']
+			max_size = conf['AutoScalingGroups'][n]['MaxSize']
+			desired_size = conf['AutoScalingGroups'][n]['DesiredCapacity']
+			#Checking current aws asg settings
+			asg_describe = client_asg.describe_auto_scaling_groups(AutoScalingGroupNames=[asg_names[n]])
+			current_min_size = asg_describe['AutoScalingGroups'][0]['MinSize']
+			current_max_size = asg_describe['AutoScalingGroups'][0]['MaxSize']
+			current_desired_size = asg_describe['AutoScalingGroups'][0]['DesiredCapacity']
+		except KeyError, e: # If missed variable from conf file
+			print "Please check your 'environment.json' config file."
+			print "ASG: %s" % asg_names[n]
+			print "The problem: %s." % e
+			sys.exit(1)
+		except IndexError: #If wrong name of asg in conf file
+			print "Please make sure you're using correct name of asg %s" % asg_names[n]
+			sys.exit(1)
+		finally:
+			json_data_file.close()
 
-	for asg_name in asg_names:
-
-		MinSize="From Conf"
-		MaxSize="From Conf"
-		DesiredCapacity="From Conf"
-
-		print "Starting ASG: %s" % asg_name
-		asg_describe = client_asg.describe_auto_scaling_groups(AutoScalingGroupNames=[asg_name])
-
-		current_min_size = asg_describe['AutoScalingGroups'][0]['MinSize']
-		current_min_size = asg_describe['AutoScalingGroups'][0]['MinSize']
-		current_max_size = asg_describe['AutoScalingGroups'][0]['MaxSize']
-		current_desired_size = asg_describe['AutoScalingGroups'][0]['DesiredCapacity']
-
-		# Checking if instances are still running in asg
+		#Checking if instances are still running in asg
 		if current_max_size > 0 and current_desired_size > 0:
-			print "Seems like instances in ASG: %s are still running" % asg_name
+			print "Seems like instances in ASG: %s are still running. Max and Desired amount > 0" % asg_name[n]
 			continue
 
-		#Update Max, Min, Desired amount of instances in ASG
-		client_asg.update_auto_scaling_group(
-		AutoScalingGroupName=asg_name,
-		MinSize=MinSize,
-		MaxSize=MaxSize,
-		DesiredCapacity=DesiredCapacity)
+		print "Starting %s instance(s) in ASG: %s" % (desired_size, asg_names[n])
 
-		time.sleep(60)
-		print "Environment is starting."
-	
+		#Update Max, Min, Desired amount of instances in ASG to start environment.
+		client_asg.update_auto_scaling_group(
+		AutoScalingGroupName=asg_names[n],
+		MinSize=min_size,
+		MaxSize=max_size,
+		DesiredCapacity=desired_size)
+
+	time.sleep(30)
+	print "Environment is started."
+
 def stop_asg(asg_names):
 
 	# 'for' loop to stop each ASG
-	for asg_name in asg_names:
-	    
-		#Needed info from config file
-		#ASG_NAME_FROM_CONF = []
+	for n in range(len(asg_names)):
+		try:
+			#Checking current aws asg settings
+			asg_describe = client_asg.describe_auto_scaling_groups(AutoScalingGroupNames=[asg_names[n]])
+			#print asg_describe
+			current_min_size = asg_describe['AutoScalingGroups'][0]['MinSize']
+			current_max_size = asg_describe['AutoScalingGroups'][0]['MaxSize']
+			current_desired_size = asg_describe['AutoScalingGroups'][0]['DesiredCapacity']
 
-		#Variables
-		asg_describe = client_asg.describe_auto_scaling_groups(AutoScalingGroupNames=[asg_name])
-		current_min_size = asg_describe['AutoScalingGroups'][0]['MinSize']
-		current_max_size = asg_describe['AutoScalingGroups'][0]['MaxSize']
-		current_desired_size = asg_describe['AutoScalingGroups'][0]['DesiredCapacity']
-		
-		#Creating list of instances in asg
-		instances = []
-		for n in range(len(asg_describe['AutoScalingGroups'][0]['Instances'])):
-			instances.append(asg_describe['AutoScalingGroups'][0]['Instances'][n]['InstanceId'])
+			#Creating list of instance IDs in asg
+			instances = []
+			for i in range(len(asg_describe['AutoScalingGroups'][0]['Instances'])):
+				instances.append(asg_describe['AutoScalingGroups'][0]['Instances'][i]['InstanceId'])
+		except IndexError: # If no ASG with this name in aws
+			print "Please check you Auto Scaling group %s" % asg_names[n]
+			sys.exit(1)
 
-		print "Stopping ASG: %s" % asg_name
+		print "Stopping %s instance(s) in ASG: %s" % (len(instances), asg_names[n])
 
 		#Checking if instances already stopped
 		if current_max_size == 0 and current_desired_size == 0:
-			print "Seems like instances in ASG: %s already stopped" % asg_name
+			print "Seems like instances in ASG: %s already stopped" % asg_names[n]
 			continue
 
-		#Updating max,min,desired instances to 0 in ASG
+		#Updating max,min,desired instances to 0 to stop all instances in asg
 		client_asg.update_auto_scaling_group(
-		AutoScalingGroupName=asg_name,
+		AutoScalingGroupName=asg_names[n],
 		MinSize=0,
 		MaxSize=0,
 		DesiredCapacity=0)
@@ -147,8 +153,8 @@ def stop_asg(asg_names):
 				inst_statuse = client_ec2.describe_instances(InstanceIds=[instance])['Reservations'][0]['Instances'][0]['State']['Name']
 				print "Instance_id: %s is still running. Waiting for it to be stopped." % instance
 				time.sleep( 30 )
+		print "Instances in %s successfully stopped." % asg_names[n]
 
-		print "Environment successfully stopped."
 
 
 #=========Create==============================================================
@@ -222,12 +228,13 @@ def create_elb(elb_names):
 			
 	#Creating Load Balancers
 	for n in range(len(elb_names)):
-		# 'for' loop to initialize list of protocols and ports for ELB and Instances attached
+
 		listener_elb_protocol = []
 		listener_elb_port = []
 		listener_instance_protocol = []
 		listener_instance_port = []
-
+		
+		# 'for' loop to initialize list of protocols and ports for ELB and Instances attached
 		for i in range(len(conf['LoadBalancer'][n]['Listeners'])):
 			listener_elb_protocol.append(conf['LoadBalancer'][n]['Listeners'][i]["Protocol"])
 			listener_elb_port.append(conf['LoadBalancer'][n]['Listeners'][i]["LoadBalancerPort"])
@@ -239,7 +246,7 @@ def create_elb(elb_names):
 		print listener_elb_protocol, listener_elb_port, listener_instance_protocol, listener_instance_port
 
 		'''client_elb.create_load_balancer(
-	    LoadBalancerName='string',
+	    LoadBalancerName=elb_names[n],
 	    Listeners=[
 	        {
 	            'Protocol': 'string',
@@ -269,12 +276,12 @@ def remove_launch_config(launch_conf_names):
 		client_asg.delete_launch_configuration(LaunchConfigurationName=launch_conf_name)
 
 
-def remove_elb(ELB_names):
+def remove_elb(elb_names):
 	
 	#Removing ELBs
-	for ELB_name in ELB_names:
-		print "Removing Load Balancer: %s" % ELB_name
-		client_elb.delete_load_balancer(LoadBalancerName=ELB_name)
+	for elb_name in elb_names:
+		print "Removing Load Balancer: %s" % elb_name
+		client_elb.delete_load_balancer(LoadBalancerName=elb_name)
 
 
 #=========Tidy_up_configuration=================================================
@@ -283,6 +290,8 @@ def config_changes():
 
 #=========Main==================================================================
 
+#stop_asg(['BE_asg-001','FE_asg-001'])
+#start_asg(['BE_asg-001','FE_asg-001'])
 
 check_usage(args)
 
@@ -296,12 +305,8 @@ elif args[1] == "restart":
 
 elif args[1] == "create":
 	create_launch_conf(launch_conf_names)
-	create_elb(ELB_names)
+	create_elb(elb_names)
 	create_asg(asg_names)
 	
 elif args[1] == "remove":
-	
-
-
-
-
+	pass
