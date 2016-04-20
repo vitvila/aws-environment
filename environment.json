@@ -1,68 +1,74 @@
 
 {
 	"AutoScalingGroups": [
-	{
-		"AutoScalingGroupName": "BE_asg-001",
-		"LaunchConfigurationName": "BE_launch_conf",
-		"MinSize": 1,
-		"MaxSize": 1,
-		"DesiredCapacity": 1,
-		"AvailabilityZones": ["string"],
-		"LoadBalancerNames": ["string"],
-		"TerminationPolicies": ["string"]
-	},
-	{
+		{
+			"AutoScalingGroupName": "BE_asg-001",
+			"LaunchConfigurationName": "BE_launch_conf",
+			"MinSize": 1,
+			"MaxSize": 1,
+			"DesiredCapacity": 1,
+			"VPCZoneIdentifier": "subnet-d7240ba0,subnet-808dcad9,subnet-ededea88",
+			"LoadBalancerNames": ["ELB1"]
+		},
+		{
 
-		"AutoScalingGroupName": "FE_asg-001",
-		"LaunchConfigurationName": "AutoScaling-Security-Group-1",
-		"MinSize": 1,
-		"MaxSize": 1,
-		"DesiredCapacity": 1,
-		"AvailabilityZones": ["string"],
-		"LoadBalancerNames": ["string"],
-		"TerminationPolicies": ["string"]
-	}
-	],
+			"AutoScalingGroupName": "FE_asg-001",
+			"LaunchConfigurationName": "FE_lauch_conf",
+			"MinSize": 1,
+			"MaxSize": 1,
+			"DesiredCapacity": 1,
+			"VPCZoneIdentifier": "subnet-d7240ba0,subnet-808dcad9,subnet-ededea88",
+			"LoadBalancerNames": ["ELB2"]
+		}
+		],
 	"LaunchConfiguration": [
-	{
-		"LaunchConfigurationName": "FE_lauch_conf",
-		"ImageId": "ami-30820343",
-		"KeyName": "rsa_key_mac",
-		"SecurityGroups": ["AutoScaling-Security-Group-1"],
-		"InstanceType": "t2.micro",
-		"AssociatePublicIpAddress": "False"
-	},
-	{
-		"LaunchConfigurationName": "BE_launch_conf",
-		"ImageId": "ami-5881002b",
-		"KeyName": "rsa_key_mac",
-		"SecurityGroups": ["BE_ELB"],
-		"InstanceType": "t2.micro",
-		"AssociatePublicIpAddress": false
-	}
-	],
+		{
+			"LaunchConfigurationName": "FE_lauch_conf",
+			"ImageId": "ami-30820343",
+			"KeyName": "rsa_key_mac",
+			"SecurityGroups": ["AutoScaling-Security-Group-1"],
+			"InstanceType": "t2.micro",
+			"AssociatePublicIpAddress": false
+		},
+		{
+			"LaunchConfigurationName": "BE_launch_conf",
+			"ImageId": "ami-5881002b",
+			"KeyName": "rsa_key_mac",
+			"SecurityGroups": ["BE_ELB"],
+			"InstanceType": "t2.micro",
+			"AssociatePublicIpAddress": false
+		}
+		],
 	"LoadBalancer": [
-	{
-		"LoadBalancerName": "ELB1",
-		"Listeners": [
 		{
-			"Protocol": "HTTPS",
-			"LoadBalancerPort": 443,
-			"InstanceProtocol": "HTTP",
-			"InstancePort": 80
+			"LoadBalancerName": "ELB1",
+			"Listeners": [
+			{
+				"Protocol": "HTTP",
+				"LoadBalancerPort": 80,
+				"InstanceProtocol": "HTTP",
+				"InstancePort": 80
+			}
+			],
+			"Subnets" : [
+				"subnet-d7240ba0",
+				"subnet-808dcad9",
+				"subnet-ededea88"]
+		},
+		{			
+			"LoadBalancerName": "ELB2",
+			"Listeners": [
+			{
+				"Protocol": "HTTP",
+				"LoadBalancerPort": 80,
+				"InstanceProtocol": "HTTP",
+				"InstancePort": 80
+			}
+			],
+			"Subnets" : [
+				"subnet-d7240ba0",
+				"subnet-808dcad9",
+				"subnet-ededea88"]
 		}
 		]
-	},
-	{			
-		"LoadBalancerName": "ELB2",
-		"Listeners": [
-		{
-			"Protocol": "HTTP",
-			"LoadBalancerPort": 80,
-			"InstanceProtocol": "HTTP",
-			"InstancePort": 80
-		}
-		]
-	}
-	]
 }

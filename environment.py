@@ -26,12 +26,13 @@ args = sys.argv
 try:
 	with open('environment.json', 'r') as json_data_file:
 		conf = json.load(json_data_file)
-except IOError:
+except IOError: # If conf file is not found
 	print "Please make sure you have a valid 'environment.json' configuration file."
 	sys.exit(1)
-except ValueError:
+except ValueError: # If json syntax is incorrect in conf file
 	print "Please check syntax of 'environment.json' configuration file."
 	sys.exit(1)
+
 
 #Initilizing ASG names from conf file
 asg_names = []
@@ -72,26 +73,30 @@ def check_usage(args):
 
 def start_asg(asg_names):
 
-	# 'for' loop to start each ASG from conf file.
+	# 'for' loop to update max,min,desired in each ASG from conf file.
 	for n in range(len(asg_names)):
 		try:
 			#Conf file settings of asg
 			min_size = conf['AutoScalingGroups'][n]['MinSize']
 			max_size = conf['AutoScalingGroups'][n]['MaxSize']
 			desired_size = conf['AutoScalingGroups'][n]['DesiredCapacity']
+			
 			#Checking current aws asg settings
 			asg_describe = client_asg.describe_auto_scaling_groups(AutoScalingGroupNames=[asg_names[n]])
 			current_min_size = asg_describe['AutoScalingGroups'][0]['MinSize']
 			current_max_size = asg_describe['AutoScalingGroups'][0]['MaxSize']
 			current_desired_size = asg_describe['AutoScalingGroups'][0]['DesiredCapacity']
-		except KeyError, e: # If missed variable from conf file
+		
+		except KeyError, e: # If variable missed from conf file
 			print "Please check your 'environment.json' config file."
 			print "ASG: %s" % asg_names[n]
 			print "The problem: %s." % e
 			sys.exit(1)
+		
 		except IndexError: #If wrong name of asg in conf file
 			print "Please make sure you're using correct name of asg %s" % asg_names[n]
 			sys.exit(1)
+		
 		finally:
 			json_data_file.close()
 
@@ -109,17 +114,16 @@ def start_asg(asg_names):
 		MaxSize=max_size,
 		DesiredCapacity=desired_size)
 
-	time.sleep(30)
+	time.sleep(50)
 	print "Environment is started."
 
 def stop_asg(asg_names):
 
-	# 'for' loop to stop each ASG
+	# 'for' loop to stop instances in each ASG
 	for n in range(len(asg_names)):
 		try:
 			#Checking current aws asg settings
 			asg_describe = client_asg.describe_auto_scaling_groups(AutoScalingGroupNames=[asg_names[n]])
-			#print asg_describe
 			current_min_size = asg_describe['AutoScalingGroups'][0]['MinSize']
 			current_max_size = asg_describe['AutoScalingGroups'][0]['MaxSize']
 			current_desired_size = asg_describe['AutoScalingGroups'][0]['DesiredCapacity']
@@ -128,6 +132,7 @@ def stop_asg(asg_names):
 			instances = []
 			for i in range(len(asg_describe['AutoScalingGroups'][0]['Instances'])):
 				instances.append(asg_describe['AutoScalingGroups'][0]['Instances'][i]['InstanceId'])
+		
 		except IndexError: # If no ASG with this name in aws
 			print "Please check you Auto Scaling group %s" % asg_names[n]
 			sys.exit(1)
@@ -163,65 +168,76 @@ def create_launch_conf(launch_conf_names):
 	
 	#Creating launch configuratoins
 	for n in range(len(launch_conf_names)):
-		
-		image_id =  conf['LaunchConfiguration'][n]['ImageId']
-		key_name = conf['LaunchConfiguration'][n]['KeyName']
-		instance_type = conf['LaunchConfiguration'][n]['InstanceType']
-		associate_ip = conf['LaunchConfiguration'][n]['AssociatePublicIpAddress']
-		
-		# 'for' loop to initialize list of security groups
-		security_groups = []
-		for i in range(len(conf['LaunchConfiguration'][n]['SecurityGroups'])):
-			security_groups.append(conf['LaunchConfiguration'][n]['SecurityGroups'][i])
+		try:
+			#Parsing variables from json conf file
+			image_id =  conf['LaunchConfiguration'][n]['ImageId']
+			key_name = conf['LaunchConfiguration'][n]['KeyName']
+			instance_type = conf['LaunchConfiguration'][n]['InstanceType']
+			associate_ip = conf['LaunchConfiguration'][n]['AssociatePublicIpAddress']
+			
+			# 'for' loop to initialize list of security groups
+			security_groups = []
+			for i in range(len(conf['LaunchConfiguration'][n]['SecurityGroups'])):
+				security_groups.append(conf['LaunchConfiguration'][n]['SecurityGroups'][i])
+
+		except KeyError, e: # If variable missed from conf file
+			print "Please check your 'environment.json' config file."
+			print "Launch Configuration: %s" % launch_conf_names[n]
+			print "The problem: %s." % e
+			sys.exit(1)
 
 		print "Creating Launch Configuration: %s" %  launch_conf_names[n]
 		print image_id, key_name, instance_type, associate_ip, security_groups
-
-		'''client_asg.create_launch_configuration(
+		
+		client_asg.create_launch_configuration(
 		LaunchConfigurationName=launch_conf_names[n],
 		ImageId=image_id,
 		KeyName=key_name,
 		SecurityGroups=security_groups,
 		InstanceType=instance_type,
-		AssociatePublicIpAddress=associate_ip)'''
+		AssociatePublicIpAddress=associate_ip)
 
 def create_asg(asg_names):
 	
 	#Creating ASGs
 	for n in range(len(asg_names)):
-		launch_conf_name =  conf['AutoScalingGroups'][n]['LaunchConfigurationName']
-		min_size = conf['AutoScalingGroups'][n]['MinSize']
-		max_size = conf['AutoScalingGroups'][n]['MaxSize']
-		desired_size = conf['AutoScalingGroups'][n]['DesiredCapacity']
 		
-		#'for' loop to initialize list of availability zones
-		availability_zones = []
-		for i in range(len(conf['AutoScalingGroups'][n]['AvailabilityZones'])):
-			availability_zones.append(conf['AutoScalingGroups'][n]['AvailabilityZones'][i])
-		#'for' loop to initialize list of load balancer names
-		load_balancer_names = []
-		for i in range(len(conf['AutoScalingGroups'][n]['LoadBalancerNames'])):
-			load_balancer_names.append(conf['AutoScalingGroups'][n]['LoadBalancerNames'][i])
-		#'for' loop to initialize list of termination policies
-		termination_policies = []
-		for i in range(len(conf['AutoScalingGroups'][n]['TerminationPolicies'])):
-			termination_policies.append(conf['AutoScalingGroups'][n]['TerminationPolicies'][i])
+		try:
+			#Parsing variables from json conf file
+			launch_conf_name =  conf['AutoScalingGroups'][n]['LaunchConfigurationName']
+			min_size = conf['AutoScalingGroups'][n]['MinSize']
+			max_size = conf['AutoScalingGroups'][n]['MaxSize']
+			desired_size = conf['AutoScalingGroups'][n]['DesiredCapacity']
+			zoneidentifier = conf['AutoScalingGroups'][n]['VPCZoneIdentifier']
 
+			#'for' loop to initialize list of load balancer names
+			load_balancer_names = []
+			for i in range(len(conf['AutoScalingGroups'][n]['LoadBalancerNames'])):
+				load_balancer_names.append(conf['AutoScalingGroups'][n]['LoadBalancerNames'][i])
+			#'for' loop to initialize list of termination policies
+			#termination_policies = []
+			#for i in range(len(conf['AutoScalingGroups'][n]['TerminationPolicies'])):
+			#	termination_policies.append(conf['AutoScalingGroups'][n]['TerminationPolicies'][i])
+		
+		except KeyError, e: # If variable missed from conf file
+			print "Please check your 'environment.json' config file."
+			print "ASG: %s" % asg_names[n]
+			print "The problem: %s." % e
+			sys.exit(1)
 
 
 		print "Creating Auto Scaling Group: %s" %  asg_names[n]
-		print asg_names[n], launch_conf_name, min_size, max_size, desired_size, availability_zones, load_balancer_names, termination_policies
+		print asg_names[n], launch_conf_name, min_size, max_size, desired_size, load_balancer_names
 
-		'''client_asg.create_auto_scaling_group(
-		AutoScalingGroupName='string',
-		LaunchConfigurationName='string',
-		MinSize=123,
-		MaxSize=123,
-		DesiredCapacity=123,
-		AvailabilityZones=['string'],
-		LoadBalancerNames=['string',],
-		TerminationPolicies=['string']
-		)'''
+		client_asg.create_auto_scaling_group(
+		AutoScalingGroupName=asg_names[n],
+		LaunchConfigurationName=launch_conf_name,
+		MinSize=min_size,
+		MaxSize=max_size,
+		DesiredCapacity=desired_size,
+		VPCZoneIdentifier=zoneidentifier,
+		LoadBalancerNames=load_balancer_names
+		)
 
 
 def create_elb(elb_names):
@@ -229,34 +245,43 @@ def create_elb(elb_names):
 	#Creating Load Balancers
 	for n in range(len(elb_names)):
 
-		listener_elb_protocol = []
-		listener_elb_port = []
-		listener_instance_protocol = []
-		listener_instance_port = []
-		
-		# 'for' loop to initialize list of protocols and ports for ELB and Instances attached
-		for i in range(len(conf['LoadBalancer'][n]['Listeners'])):
-			listener_elb_protocol.append(conf['LoadBalancer'][n]['Listeners'][i]["Protocol"])
-			listener_elb_port.append(conf['LoadBalancer'][n]['Listeners'][i]["LoadBalancerPort"])
-			listener_instance_protocol.append(conf['LoadBalancer'][n]['Listeners'][i]["InstanceProtocol"])
-			listener_instance_port.append(conf['LoadBalancer'][n]['Listeners'][i]["InstancePort"])
-
+		subnets = conf['LoadBalancer'][n]['Subnets']
+		print subnets
 
 		print "Creating Load Balancer: %s" %  elb_names[n]
-		print listener_elb_protocol, listener_elb_port, listener_instance_protocol, listener_instance_port
 
-		'''client_elb.create_load_balancer(
-	    LoadBalancerName=elb_names[n],
-	    Listeners=[
-	        {
-	            'Protocol': 'string',
-	            'LoadBalancerPort': 123,
-	            'InstanceProtocol': 'string',
-	            'InstancePort': 123,
-	        },
-	    ])'''
+		# 'for' loop to initialize list of protocols/ports for ELB and Instances attached
+		for i in range(len(conf['LoadBalancer'][n]['Listeners'])):
+			listener_elb_protocol = conf['LoadBalancer'][n]['Listeners'][i]["Protocol"]
+			listener_elb_port = conf['LoadBalancer'][n]['Listeners'][i]["LoadBalancerPort"]
+			listener_instance_protocol = conf['LoadBalancer'][n]['Listeners'][i]["InstanceProtocol"]
+			listener_instance_port = conf['LoadBalancer'][n]['Listeners'][i]["InstancePort"]			
 
+			if i == 0:
+				client_elb.create_load_balancer(
+				LoadBalancerName=elb_names[n],
+				Listeners=[
+					{
+					'Protocol': listener_elb_protocol,
+					'LoadBalancerPort': listener_elb_port,
+					'InstanceProtocol': listener_instance_protocol,
+					'InstancePort': listener_instance_port
+					}
+					],
+				Subnets = subnets)
 
+			elif i > 0:
+				client.create_load_balancer_listeners(
+					LoadBalancerName=elb_names[n],
+					Listeners=[
+						{
+						'Protocol': listener_elb_protocol,
+						'LoadBalancerPort': listener_elb_port,
+						'InstanceProtocol': listener_instance_protocol,
+						'InstancePort': listener_instance_port
+						}
+						],
+						)
 
 #=========Remove==============================================================
 
@@ -293,12 +318,24 @@ def config_changes():
 #stop_asg(['BE_asg-001','FE_asg-001'])
 #start_asg(['BE_asg-001','FE_asg-001'])
 
+#create_launch_conf(launch_conf_names)
+#remove_launch_config(launch_conf_names)
+
+#create_elb(elb_names)
+#remove_elb(elb_names)
+
+#create_asg(asg_names)
+#remove_asg()
+
+
 check_usage(args)
 
 if args[1] == "start":
 	start_asg(asg_names)
+
 elif args[1] == "stop":
 	stop_asg(asg_names)
+
 elif args[1] == "restart":
 	stop_asg(asg_names)
 	start_asg(asg_names)
